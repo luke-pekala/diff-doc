@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { supabase } from '../utils/supabase'
-import { FileText, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 export default function AuthPage() {
   const [mode, setMode] = useState('login')
@@ -13,10 +12,7 @@ export default function AuthPage() {
   const clear = () => { setMessage(null); setError(null) }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    clear()
-    setLoading(true)
-
+    e.preventDefault(); clear(); setLoading(true)
     if (mode === 'login') {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setError(error.message)
@@ -33,122 +29,120 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div style={{
+      minHeight: '100dvh', background: 'var(--background)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem'
+    }}>
+      <div style={{ width: '100%', maxWidth: '380px' }}>
 
-        {/* Logo */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <FileText className="w-5 h-5 text-primary-foreground" />
-          </div>
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '2rem' }}>
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+            <path d="M16 3L4 8v8c0 6.627 5.152 11.95 12 13 6.848-1.05 12-6.373 12-13V8L16 3z"
+              fill="var(--secondary)" stroke="var(--border)" strokeWidth="1.5"/>
+            <path d="M11 16.5l3.5 3.5 6.5-7" stroke="var(--primary)" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">DiffDoc</h1>
-            <p className="text-xs text-muted-foreground">Visual Document Comparison</p>
+            <div style={{ fontSize: '0.9375rem', fontWeight: 600, letterSpacing: '-0.015em', color: 'var(--foreground)', lineHeight: 1.2 }}>DiffDoc</div>
+            <div style={{ fontSize: '0.6875rem', color: 'var(--muted-foreground)', lineHeight: 1 }}>Visual Document Comparison</div>
           </div>
         </div>
 
         {/* Card */}
-        <div className="rounded-xl border bg-card shadow-sm p-6">
-
+        <div style={{
+          background: 'var(--card)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-xl)', overflow: 'hidden'
+        }}>
           {/* Tabs */}
-          <div className="flex border-b mb-6">
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
             {['login', 'signup'].map(m => (
-              <button
-                key={m}
-                onClick={() => { setMode(m); clear() }}
-                className={`flex-1 pb-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                  mode === m
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
+              <button key={m} onClick={() => { setMode(m); clear() }} style={{
+                flex: 1, padding: '0.75rem', background: 'none', border: 'none',
+                borderBottom: `2px solid ${mode === m ? 'var(--primary)' : 'transparent'}`,
+                marginBottom: '-1px', fontFamily: 'var(--font-sans)', fontSize: '0.8125rem',
+                fontWeight: 500, color: mode === m ? 'var(--foreground)' : 'var(--muted-foreground)',
+                cursor: 'pointer', transition: 'color var(--dur-fast) var(--ease-out)'
+              }}>
                 {m === 'login' ? 'Sign in' : 'Create account'}
               </button>
             ))}
           </div>
 
-          {mode === 'reset' && (
-            <p className="text-sm text-muted-foreground mb-4">
-              Enter your email and we'll send you a reset link.
-            </p>
-          )}
-
-          {error && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm mb-4">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              {error}
-            </div>
-          )}
-
-          {message && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 text-sm mb-4">
-              <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              {message}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                required
-                autoFocus
-                className="w-full h-10 px-3 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-ring transition-shadow"
-              />
-            </div>
-
-            {mode !== 'reset' && (
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Min. 8 characters"
-                  required
-                  minLength={8}
-                  className="w-full h-10 px-3 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-ring transition-shadow"
-                />
-              </div>
+          <div style={{ padding: '1.5rem' }}>
+            {mode === 'reset' && (
+              <p style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)', marginBottom: '1rem', lineHeight: 1.5 }}>
+                Enter your email and we'll send a reset link.
+              </p>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Please wait…'
-                : mode === 'login' ? 'Sign in'
-                : mode === 'signup' ? 'Create account'
-                : 'Send reset link'}
-            </button>
-          </form>
+            {error && (
+              <div style={{
+                padding: '0.625rem 0.875rem', borderRadius: 'var(--radius-md)',
+                background: 'rgba(248,113,113,.1)', border: '1px solid rgba(248,113,113,.2)',
+                color: '#fca5a5', fontSize: '0.8125rem', marginBottom: '1rem', lineHeight: 1.5
+              }}>⚠ {error}</div>
+            )}
+            {message && (
+              <div style={{
+                padding: '0.625rem 0.875rem', borderRadius: 'var(--radius-md)',
+                background: 'rgba(74,222,128,.1)', border: '1px solid rgba(74,222,128,.2)',
+                color: '#86efac', fontSize: '0.8125rem', marginBottom: '1rem', lineHeight: 1.5
+              }}>✓ {message}</div>
+            )}
 
-          {mode === 'login' && (
-            <button
-              onClick={() => { setMode('reset'); clear() }}
-              className="w-full mt-4 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Forgot password?
-            </button>
-          )}
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {[
+                { label: 'Email', type: 'email', val: email, set: setEmail, ph: 'you@company.com' },
+                ...(mode !== 'reset' ? [{ label: 'Password', type: 'password', val: password, set: setPassword, ph: 'Min. 8 characters' }] : [])
+              ].map(f => (
+                <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--foreground)' }}>{f.label}</label>
+                  <input type={f.type} value={f.val} onChange={e => f.set(e.target.value)}
+                    placeholder={f.ph} required minLength={f.type === 'password' ? 8 : undefined}
+                    style={{
+                      height: '2.25rem', padding: '0 0.75rem', background: 'var(--secondary)',
+                      border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+                      fontFamily: 'var(--font-sans)', fontSize: '0.875rem',
+                      color: 'var(--foreground)', outline: 'none', width: '100%',
+                      transition: 'border-color var(--dur-fast) var(--ease-out)'
+                    }}
+                    onFocus={e => e.target.style.borderColor = 'var(--ring)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                  />
+                </div>
+              ))}
 
-          {mode === 'reset' && (
-            <button
-              onClick={() => { setMode('login'); clear() }}
-              className="w-full mt-4 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              ← Back to sign in
-            </button>
-          )}
+              <button type="submit" disabled={loading} style={{
+                height: '2.25rem', borderRadius: 'var(--radius-md)', background: 'var(--primary)',
+                color: 'var(--primary-foreground)', border: 'none', fontFamily: 'var(--font-sans)',
+                fontSize: '0.875rem', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.6 : 1, transition: 'opacity var(--dur-fast) var(--ease-out)',
+                marginTop: '0.25rem'
+              }}>
+                {loading ? 'Please wait…' : mode === 'login' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'}
+              </button>
+            </form>
+
+            {mode === 'login' && (
+              <button onClick={() => { setMode('reset'); clear() }} style={{
+                display: 'block', marginTop: '1rem', width: '100%', background: 'none', border: 'none',
+                fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--muted-foreground)',
+                cursor: 'pointer', textAlign: 'center'
+              }}>Forgot password?</button>
+            )}
+            {mode === 'reset' && (
+              <button onClick={() => { setMode('login'); clear() }} style={{
+                display: 'block', marginTop: '1rem', width: '100%', background: 'none', border: 'none',
+                fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--muted-foreground)',
+                cursor: 'pointer', textAlign: 'center'
+              }}>← Back to sign in</button>
+            )}
+          </div>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          🔒 Your documents never leave your browser
+        <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.6875rem', color: 'var(--muted-foreground)', opacity: 0.6 }}>
+          🔒 Documents never leave your browser
         </p>
       </div>
     </div>

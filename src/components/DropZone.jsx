@@ -1,8 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { extractTextFromPDF } from '../utils/pdfExtract'
 import { extractTextFromDOCX } from '../utils/docxExtract'
-import { Upload, X, FileText } from 'lucide-react'
-import { cn } from '../lib/utils'
 
 function getFileType(file) {
   if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) return 'pdf'
@@ -12,7 +10,7 @@ function getFileType(file) {
   return 'unknown'
 }
 
-export default function DropZone({ label, side, value, onChange, fileName, onFileNameChange }) {
+export default function DropZone({ label, step, side, value, onChange, fileName, onFileNameChange }) {
   const [dragging, setDragging] = useState(false)
   const [loading, setLoading] = useState(false)
   const [loadingMsg, setLoadingMsg] = useState('')
@@ -23,20 +21,15 @@ export default function DropZone({ label, side, value, onChange, fileName, onFil
     if (!file) return
     setError(null)
     const type = getFileType(file)
-
     if (type === 'pdf') {
-      setLoading(true); setLoadingMsg('Extracting text from PDF…')
-      try {
-        onChange(await extractTextFromPDF(file))
-        onFileNameChange(file.name)
-      } catch { setError('Could not extract PDF text. Is it a scanned image?') }
+      setLoading(true); setLoadingMsg('Extracting from PDF…')
+      try { onChange(await extractTextFromPDF(file)); onFileNameChange(file.name) }
+      catch { setError('Could not extract PDF. Is it a scanned image?') }
       finally { setLoading(false) }
     } else if (type === 'docx') {
-      setLoading(true); setLoadingMsg('Extracting text from Word document…')
-      try {
-        onChange(await extractTextFromDOCX(file))
-        onFileNameChange(file.name)
-      } catch { setError('Could not extract Word document text.') }
+      setLoading(true); setLoadingMsg('Extracting from Word document…')
+      try { onChange(await extractTextFromDOCX(file)); onFileNameChange(file.name) }
+      catch { setError('Could not extract Word document.') }
       finally { setLoading(false) }
     } else if (type === 'text') {
       const reader = new FileReader()
@@ -48,90 +41,117 @@ export default function DropZone({ label, side, value, onChange, fileName, onFil
   }, [onChange, onFileNameChange])
 
   const handleDrop = useCallback((e) => {
-    e.preventDefault(); setDragging(false)
-    processFile(e.dataTransfer.files[0])
+    e.preventDefault(); setDragging(false); processFile(e.dataTransfer.files[0])
   }, [processFile])
 
-  const accentClass = side === 'left' ? 'text-violet-600' : 'text-emerald-600'
-  const borderAccent = side === 'left' ? 'border-l-violet-500' : 'border-l-emerald-500'
-
   return (
-    <div className="flex flex-col h-full bg-card border-r border-border">
+    <div style={{
+      background: 'var(--card)', border: `1px solid ${dragging ? 'var(--ring)' : 'var(--border)'}`,
+      borderRadius: 'var(--radius-xl)', overflow: 'hidden',
+      display: 'flex', flexDirection: 'column', minHeight: 320,
+      outline: dragging ? '1px dashed var(--ring)' : 'none', outlineOffset: -3,
+      transition: 'border-color var(--dur-fast) var(--ease-out)',
+      animation: 'fade-up 0.35s var(--ease-out) both'
+    }}
+      onDrop={handleDrop}
+      onDragOver={e => { e.preventDefault(); setDragging(true) }}
+      onDragLeave={() => setDragging(false)}
+    >
       {/* Header */}
-      <div className={cn('flex items-center gap-2 px-4 py-2.5 border-b border-border bg-muted/30 border-l-2', borderAccent)}>
-        <span className={cn('text-xs font-semibold uppercase tracking-widest flex-1', accentClass)}>{label}</span>
-        {fileName && (
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-background border rounded-md px-2 py-0.5 max-w-[160px] truncate">
-            <FileText className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{fileName}</span>
-            <button onClick={() => { onChange(''); onFileNameChange('') }} className="flex-shrink-0 hover:text-destructive">
-              <X className="w-3 h-3" />
-            </button>
-          </span>
-        )}
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className={cn('text-xs font-medium px-2.5 py-1 rounded-md border transition-colors', accentClass, 'border-current hover:bg-accent')}
-        >
-          + PDF / DOCX / TXT
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
+        padding: '0.625rem 1rem', borderBottom: '1px solid var(--border)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', fontWeight: 400,
+            color: 'var(--muted-foreground)', letterSpacing: '0.04em',
+            background: 'var(--secondary)', padding: '0.1em 0.4em',
+            borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)'
+          }}>{step}</span>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--foreground)' }}>{label}</span>
+          {fileName && (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--muted-foreground)',
+              background: 'var(--secondary)', padding: '0.15em 0.5em',
+              borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', gap: '0.3rem', maxWidth: 160, overflow: 'hidden'
+            }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fileName}</span>
+              <button onClick={() => { onChange(''); onFileNameChange('') }} style={{
+                background: 'none', border: 'none', color: 'var(--muted-foreground)',
+                cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0, fontSize: '0.75rem'
+              }}>×</button>
+            </span>
+          )}
+        </div>
+        <button onClick={() => fileInputRef.current?.click()} style={{
+          display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+          height: '1.75rem', padding: '0 0.6rem', borderRadius: 'var(--radius-md)',
+          background: 'var(--secondary)', border: '1px solid var(--border)',
+          fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: 500,
+          color: 'var(--muted-foreground)', cursor: 'pointer',
+          transition: 'color var(--dur-fast) var(--ease-out)'
+        }}>
+          + Upload
         </button>
-        <input ref={fileInputRef} type="file" accept=".pdf,.docx,.doc,.txt,.md" className="hidden" onChange={e => processFile(e.target.files[0])} />
+        <input ref={fileInputRef} type="file" accept=".pdf,.docx,.doc,.txt,.md" style={{ display: 'none' }}
+          onChange={e => processFile(e.target.files[0])} />
       </div>
 
       {/* Body */}
-      <div
-        className={cn('relative flex-1 min-h-0 overflow-hidden', dragging && 'bg-accent/50')}
-        onDrop={handleDrop}
-        onDragOver={e => { e.preventDefault(); setDragging(true) }}
-        onDragLeave={() => setDragging(false)}
-      >
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         {loading ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
-            <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
-            <span className="text-sm">{loadingMsg}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '0.75rem', color: 'var(--muted-foreground)' }}>
+            <span style={{ width: 14, height: 14, border: '1.5px solid var(--border)', borderTopColor: 'var(--ring)', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{loadingMsg}</span>
           </div>
         ) : value ? (
-          <textarea
-            className="w-full h-full p-5 text-sm leading-relaxed bg-transparent resize-none outline-none text-foreground placeholder:text-muted-foreground font-sans"
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            spellCheck={false}
-          />
+          <textarea value={value} onChange={e => onChange(e.target.value)} spellCheck={false}
+            style={{
+              width: '100%', height: '100%', padding: '1rem', background: 'transparent', border: 'none',
+              fontFamily: 'var(--font-sans)', fontSize: '0.875rem', lineHeight: 1.7,
+              color: 'var(--foreground)', resize: 'none', outline: 'none', minHeight: 240
+            }} />
         ) : (
-          <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center">
-            <div className="w-12 h-12 rounded-xl border-2 border-dashed border-border flex items-center justify-center">
-              <Upload className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">Drop a file here</p>
-              <p className="text-xs text-muted-foreground mt-1">PDF, Word (.docx), TXT, MD — or paste text directly</p>
-            </div>
-          </div>
-        )}
-
-        {dragging && (
-          <div className={cn('absolute inset-2 border-2 border-dashed rounded-lg flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-none', side === 'left' ? 'border-violet-400' : 'border-emerald-400')}>
-            <span className={cn('text-sm font-medium', accentClass)}>Drop to load</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '0.625rem', padding: '2rem', textAlign: 'center', minHeight: 240 }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color: 'var(--muted-foreground)', opacity: 0.4 }}>
+              <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.3"/>
+              <line x1="10" y1="6" x2="10" y2="10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              <circle cx="10" cy="13" r="0.6" fill="currentColor"/>
+            </svg>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+              Paste text or drag &amp; drop a file
+            </p>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--muted-foreground)', opacity: 0.6 }}>
+              PDF · DOCX · TXT · MD
+            </p>
           </div>
         )}
       </div>
 
       {/* Error */}
       {error && (
-        <div className="px-4 py-2 text-xs text-destructive bg-destructive/10 border-t border-destructive/20">
-          ⚠ {error}
-        </div>
+        <div style={{
+          padding: '0.5rem 1rem', background: 'rgba(248,113,113,.08)',
+          borderTop: '1px solid rgba(248,113,113,.15)',
+          fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#fca5a5'
+        }}>⚠ {error}</div>
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-muted/30">
-        <span className="text-xs text-muted-foreground font-mono">
-          {value.length.toLocaleString()} chars · {value.split('\n').length} lines
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0.4rem 1rem', borderTop: '1px solid var(--border)'
+      }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--muted-foreground)' }}>
+          {value.length.toLocaleString()} chars
         </span>
         {value && (
-          <button onClick={() => { onChange(''); onFileNameChange('') }} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
-            Clear
-          </button>
+          <button onClick={() => { onChange(''); onFileNameChange('') }} style={{
+            background: 'none', border: 'none', fontFamily: 'var(--font-mono)',
+            fontSize: '0.6875rem', color: 'var(--muted-foreground)', cursor: 'pointer'
+          }}>Clear</button>
         )}
       </div>
     </div>

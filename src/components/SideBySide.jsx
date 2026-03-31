@@ -1,6 +1,5 @@
 import React, { useRef, useCallback, useImperativeHandle, forwardRef } from 'react'
 import { renderLeftPane, renderRightPane } from '../utils/diffEngine'
-import { cn } from '../lib/utils'
 
 const SideBySide = forwardRef(function SideBySide({ diffs, leftLabel, rightLabel, currentChange }, ref) {
   const leftRef = useRef(null)
@@ -9,7 +8,6 @@ const SideBySide = forwardRef(function SideBySide({ diffs, leftLabel, rightLabel
 
   const leftSegments = renderLeftPane(diffs)
   const rightSegments = renderRightPane(diffs)
-  const totalChanges = diffs.filter(([op]) => op !== 0).length
 
   const handleLeftScroll = useCallback(() => {
     if (syncingRef.current) return
@@ -41,51 +39,44 @@ const SideBySide = forwardRef(function SideBySide({ diffs, leftLabel, rightLabel
   }))
 
   const renderSegments = (segments) => {
-    let changeIndex = 0
     return segments.map((seg, i) => {
-      if (seg.type === 'del') {
-        const idx = seg.changeIndex ?? changeIndex++
-        return (
-          <span key={i} className={cn('diff-del', currentChange === idx && 'diff-active')} data-change-index={idx}>
-            {seg.text}
-          </span>
-        )
-      }
-      if (seg.type === 'ins') {
-        const idx = seg.changeIndex ?? changeIndex++
-        return (
-          <span key={i} className={cn('diff-ins', currentChange === idx && 'diff-active')} data-change-index={idx}>
-            {seg.text}
-          </span>
-        )
-      }
+      const idx = seg.changeIndex
+      if (seg.type === 'del') return <span key={i} className={`diff-del${currentChange === idx ? ' diff-active' : ''}`} data-change-index={idx}>{seg.text}</span>
+      if (seg.type === 'ins') return <span key={i} className={`diff-ins${currentChange === idx ? ' diff-active' : ''}`} data-change-index={idx}>{seg.text}</span>
       return <span key={i}>{seg.text}</span>
     })
   }
 
+  const paneHeaderStyle = (color) => ({
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '0.5rem 1rem', borderBottom: '1px solid var(--border)',
+    background: 'var(--card)', flexShrink: 0,
+    borderTop: `2px solid ${color}`
+  })
+
   return (
-    <div className="flex h-full overflow-hidden animate-fade-up bg-background">
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b border-border border-t-2 border-t-violet-500 flex-shrink-0">
-          <span className="text-xs font-mono text-muted-foreground truncate max-w-[200px]">{leftLabel || 'Original'}</span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-violet-500">Original</span>
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: 'var(--background)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+        <div style={paneHeaderStyle('var(--ring)')}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{leftLabel}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--muted-foreground)', letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>Original</span>
         </div>
-        <div className="flex-1 overflow-y-auto p-5" ref={leftRef} onScroll={handleLeftScroll}>
-          <pre className="font-sans text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground m-0">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.25rem' }} ref={leftRef} onScroll={handleLeftScroll}>
+          <pre style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', lineHeight: 1.75, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--foreground)', margin: 0 }}>
             {renderSegments(leftSegments)}
           </pre>
         </div>
       </div>
 
-      <div className="w-px bg-border flex-shrink-0" />
+      <div style={{ width: 1, background: 'var(--border)', flexShrink: 0 }} />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b border-border border-t-2 border-t-emerald-500 flex-shrink-0">
-          <span className="text-xs font-mono text-muted-foreground truncate max-w-[200px]">{rightLabel || 'Revised'}</span>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600">Revised</span>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+        <div style={paneHeaderStyle('#34d399')}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--muted-foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rightLabel}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--muted-foreground)', letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0 }}>Revised</span>
         </div>
-        <div className="flex-1 overflow-y-auto p-5" ref={rightRef} onScroll={handleRightScroll}>
-          <pre className="font-sans text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground m-0">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.25rem' }} ref={rightRef} onScroll={handleRightScroll}>
+          <pre style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', lineHeight: 1.75, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--foreground)', margin: 0 }}>
             {renderSegments(rightSegments)}
           </pre>
         </div>

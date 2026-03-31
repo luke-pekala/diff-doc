@@ -8,8 +8,54 @@ import SideBySide from './components/SideBySide'
 import ChangeNavigator from './components/ChangeNavigator'
 import SavedComparisons from './components/SavedComparisons'
 import { computeDiff, computeStats, exportDiffHTML } from './utils/diffEngine'
-import { FileText, Download, RotateCcw, Save, LogOut, CheckCircle2, AlertCircle } from 'lucide-react'
-import { cn } from './lib/utils'
+
+// Shared button style
+const btn = (variant = 'ghost') => ({
+  display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+  height: '2rem', padding: '0 0.75rem',
+  borderRadius: 'var(--radius-md)', border: '1px solid var(--border)',
+  fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: 500,
+  cursor: 'pointer', whiteSpace: 'nowrap',
+  transition: 'background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)',
+  ...(variant === 'primary'
+    ? { background: 'var(--primary)', color: 'var(--primary-foreground)', borderColor: 'transparent' }
+    : { background: 'var(--secondary)', color: 'var(--foreground)', borderColor: 'var(--border)' })
+})
+
+function ThemeToggle() {
+  const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') || 'dark')
+  const toggle = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    document.documentElement.setAttribute('data-theme', next)
+    localStorage.setItem('dd-theme', next)
+    setTheme(next)
+  }
+  return (
+    <button onClick={toggle} style={{
+      display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+      height: '2rem', padding: '0 0.75rem', borderRadius: '9999px',
+      background: 'var(--secondary)', border: '1px solid var(--border)',
+      color: 'var(--foreground)', fontFamily: 'var(--font-sans)',
+      fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer',
+      transition: 'background var(--dur-fast) var(--ease-out)'
+    }} aria-label="Toggle theme">
+      {theme === 'dark' ? (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ) : (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.75"/>
+          <line x1="12" y1="2" x2="12" y2="4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+          <line x1="12" y1="20" x2="12" y2="22" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+          <line x1="2" y1="12" x2="4" y2="12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+          <line x1="20" y1="12" x2="22" y2="12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+        </svg>
+      )}
+      {theme === 'dark' ? 'Dark' : 'Light'}
+    </button>
+  )
+}
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -25,18 +71,13 @@ export default function App() {
   const [saveStatus, setSaveStatus] = useState(null)
   const [saveTitle, setSaveTitle] = useState('')
   const [showSaveDialog, setShowSaveDialog] = useState(false)
-
   const diffViewRef = useRef(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session); setAuthLoading(false)
-    })
+    supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); setAuthLoading(false) })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setSession(session))
     return () => subscription.unsubscribe()
   }, [])
-
-  const handleSignOut = () => supabase.auth.signOut()
 
   const handleCompare = useCallback(() => {
     if (!leftText.trim() && !rightText.trim()) return
@@ -45,7 +86,6 @@ export default function App() {
   }, [leftText, rightText])
 
   const stats = useMemo(() => diffs ? computeStats(diffs) : null, [diffs])
-
   const totalChanges = useMemo(() => diffs ? diffs.filter(([op]) => op !== 0).length : 0, [diffs])
 
   const handleNext = useCallback(() => {
@@ -64,11 +104,8 @@ export default function App() {
     const { error } = await supabase.from('comparisons').insert({
       user_id: session.user.id,
       title: saveTitle || `Comparison ${new Date().toLocaleDateString('en-GB')}`,
-      file_a: leftFile || 'Document A',
-      file_b: rightFile || 'Document B',
-      text_a: leftText,
-      text_b: rightText,
-      similarity: stats?.similarity ?? 0,
+      file_a: leftFile || 'Document A', file_b: rightFile || 'Document B',
+      text_a: leftText, text_b: rightText, similarity: stats?.similarity ?? 0,
     })
     setSaveStatus(error ? 'error' : 'saved')
     setTimeout(() => setSaveStatus(null), 3000)
@@ -87,8 +124,7 @@ export default function App() {
     const html = exportDiffHTML(diffs, leftFile || 'Original', rightFile || 'Revised')
     const blob = new Blob([html], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'diffdoc-report.html'; a.click()
+    const a = document.createElement('a'); a.href = url; a.download = 'diffdoc-report.html'; a.click()
     URL.revokeObjectURL(url)
   }, [diffs, leftFile, rightFile])
 
@@ -101,155 +137,185 @@ export default function App() {
   const canCompare = leftText.trim().length > 0 || rightText.trim().length > 0
 
   if (authLoading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-border border-t-primary rounded-full animate-spin" />
+    <div style={{ minHeight: '100dvh', background: 'var(--background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ width: 16, height: 16, border: '1.5px solid var(--border)', borderTopColor: 'var(--ring)', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
     </div>
   )
 
   if (!session) return <AuthPage />
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
 
-      {/* Header */}
-      <header className="flex items-center justify-between px-5 h-14 border-b border-border bg-card flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <FileText className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <div>
-            <span className="text-base font-semibold tracking-tight">DiffDoc</span>
-            <span className="text-xs text-muted-foreground ml-2 hidden sm:inline">Visual Document Comparison</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {hasRun && <ChangeNavigator current={currentChange} total={totalChanges} onPrev={handlePrev} onNext={handleNext} />}
-
-          {hasRun && (
-            <div className="flex items-center border border-border rounded-lg overflow-hidden">
-              {['side-by-side', 'inline'].map(v => (
-                <button key={v} onClick={() => setView(v)}
-                  className={cn('px-3 h-8 text-xs font-medium transition-colors',
-                    view === v ? 'bg-primary text-primary-foreground' : 'hover:bg-accent text-muted-foreground'
-                  )}>
-                  {v === 'side-by-side' ? 'Side by side' : 'Inline'}
-                </button>
-              ))}
+      {/* ── HEADER ── */}
+      <header style={{
+        background: 'var(--card)', borderBottom: '1px solid var(--border)',
+        position: 'sticky', top: 0, zIndex: 50,
+        animation: 'fade-up 0.3s var(--ease-out) both'
+      }}>
+        <div style={{
+          maxWidth: 1280, margin: '0 auto', padding: '0 1.5rem',
+          height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem'
+        }}>
+          {/* Brand */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexShrink: 0 }}>
+            <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+              <path d="M16 3L4 8v8c0 6.627 5.152 11.95 12 13 6.848-1.05 12-6.373 12-13V8L16 3z"
+                fill="var(--secondary)" stroke="var(--border)" strokeWidth="1.5"/>
+              <path d="M11 16.5l3.5 3.5 6.5-7" stroke="var(--primary)" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <div>
+              <div style={{ fontSize: '0.9375rem', fontWeight: 600, letterSpacing: '-0.015em', color: 'var(--foreground)', lineHeight: 1.2 }}>DiffDoc</div>
+              <div style={{ fontSize: '0.6875rem', color: 'var(--muted-foreground)', lineHeight: 1 }}>Visual Document Comparison</div>
             </div>
-          )}
+          </div>
 
-          {hasRun && (
-            <button onClick={() => setShowSaveDialog(true)} disabled={saveStatus === 'saving'}
-              className={cn('flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium transition-colors border',
-                saveStatus === 'saved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-                  : saveStatus === 'error' ? 'bg-destructive/10 text-destructive border-destructive/20'
-                  : 'bg-primary text-primary-foreground border-primary hover:bg-primary/90'
-              )}>
-              {saveStatus === 'saving' ? <><div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />Saving…</>
-                : saveStatus === 'saved' ? <><CheckCircle2 className="w-3.5 h-3.5" />Saved</>
-                : saveStatus === 'error' ? <><AlertCircle className="w-3.5 h-3.5" />Error</>
-                : <><Save className="w-3.5 h-3.5" />Save</>}
-            </button>
-          )}
+          {/* Right controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {hasRun && <ChangeNavigator current={currentChange} total={totalChanges} onPrev={handlePrev} onNext={handleNext} />}
 
-          {hasRun && (
-            <button onClick={handleExport}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium border border-border hover:bg-accent transition-colors">
-              <Download className="w-3.5 h-3.5" />Export
-            </button>
-          )}
+            {hasRun && (
+              <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                {['side-by-side', 'inline'].map(v => (
+                  <button key={v} onClick={() => setView(v)} style={{
+                    padding: '0 0.75rem', height: '2rem', background: view === v ? 'var(--primary)' : 'transparent',
+                    color: view === v ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                    border: 'none', fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer',
+                    transition: 'background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)'
+                  }}>{v === 'side-by-side' ? 'Side by side' : 'Inline'}</button>
+                ))}
+              </div>
+            )}
 
-          <SavedComparisons onLoad={handleLoad} />
+            {hasRun && (
+              <button onClick={() => setShowSaveDialog(true)} disabled={saveStatus === 'saving'} style={{
+                ...btn(saveStatus === 'saved' ? 'ghost' : 'primary'),
+                ...(saveStatus === 'saved' ? { background: 'rgba(74,222,128,.12)', color: '#86efac', borderColor: 'rgba(74,222,128,.2)' } : {}),
+                ...(saveStatus === 'error' ? { background: 'rgba(248,113,113,.12)', color: '#fca5a5', borderColor: 'rgba(248,113,113,.2)' } : {}),
+                opacity: saveStatus === 'saving' ? 0.6 : 1
+              }}>
+                {saveStatus === 'saving' ? '…' : saveStatus === 'saved' ? '✓ Saved' : saveStatus === 'error' ? '⚠ Error' : '↑ Save'}
+              </button>
+            )}
 
-          {hasRun && (
-            <button onClick={handleReset}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium border border-border hover:bg-accent transition-colors">
-              <RotateCcw className="w-3.5 h-3.5" />Reset
-            </button>
-          )}
+            {hasRun && (
+              <button onClick={handleExport} style={btn()}>↓ Export</button>
+            )}
 
-          <div className="flex items-center gap-2 pl-2 border-l border-border ml-1">
-            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-[10px] font-bold text-primary">{session.user.email[0].toUpperCase()}</span>
+            <SavedComparisons onLoad={handleLoad} />
+
+            {hasRun && (
+              <button onClick={handleReset} style={btn()}>↺ Reset</button>
+            )}
+
+            <ThemeToggle />
+
+            {/* User */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingLeft: '0.5rem', borderLeft: '1px solid var(--border)' }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: '50%', background: 'var(--secondary)',
+                border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', fontWeight: 500, color: 'var(--foreground)'
+              }}>
+                {session.user.email[0].toUpperCase()}
+              </div>
+              <button onClick={() => supabase.auth.signOut()} style={{
+                background: 'none', border: 'none', fontFamily: 'var(--font-mono)',
+                fontSize: '0.6875rem', color: 'var(--muted-foreground)', cursor: 'pointer',
+                transition: 'color var(--dur-fast) var(--ease-out)'
+              }} onMouseEnter={e => e.target.style.color = 'var(--foreground)'}
+                onMouseLeave={e => e.target.style.color = 'var(--muted-foreground)'}>
+                Sign out
+              </button>
             </div>
-            <button onClick={handleSignOut}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors">
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       </header>
 
-      {/* Save Dialog */}
+      {/* ── SAVE DIALOG ── */}
       {showSaveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowSaveDialog(false)}>
-          <div className="bg-card border border-border rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4 animate-fade-up" onClick={e => e.stopPropagation()}>
-            <h3 className="text-sm font-semibold mb-4">Save comparison</h3>
-            <input
-              className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-ring mb-4"
-              type="text"
-              placeholder="Give this comparison a name…"
-              value={saveTitle}
-              onChange={e => setSaveTitle(e.target.value)}
-              autoFocus
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }} onClick={() => setShowSaveDialog(false)}>
+          <div style={{
+            background: 'var(--card)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-xl)', padding: '1.5rem', width: '100%', maxWidth: 360,
+            animation: 'fade-up 0.2s var(--ease-out) both'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: '1rem' }}>
+              Save comparison
+            </div>
+            <input type="text" placeholder="Give this comparison a name…" value={saveTitle}
+              onChange={e => setSaveTitle(e.target.value)} autoFocus
               onKeyDown={e => e.key === 'Enter' && handleSave()}
+              style={{
+                width: '100%', height: '2.25rem', padding: '0 0.75rem',
+                background: 'var(--secondary)', border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)', fontFamily: 'var(--font-sans)',
+                fontSize: '0.875rem', color: 'var(--foreground)', outline: 'none',
+                marginBottom: '1rem'
+              }}
             />
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowSaveDialog(false)}
-                className="h-9 px-4 rounded-lg border border-border text-sm font-medium hover:bg-accent transition-colors">
-                Cancel
-              </button>
-              <button onClick={handleSave}
-                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-                Save
-              </button>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowSaveDialog(false)} style={btn()}>Cancel</button>
+              <button onClick={handleSave} style={btn('primary')}>Save</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Input Phase */}
+      {/* ── INPUT PHASE ── */}
       {!hasRun && (
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden animate-fade-up">
-          <div className="flex-1 grid grid-cols-2 min-h-0 overflow-hidden border-t border-border">
-            <DropZone label="Document A — Original" side="left" value={leftText} onChange={setLeftText} fileName={leftFile} onFileNameChange={setLeftFile} />
-            <DropZone label="Document B — Revised" side="right" value={rightText} onChange={setRightText} fileName={rightFile} onFileNameChange={setRightFile} />
+        <main style={{
+          flex: 1, maxWidth: 1280, width: '100%', margin: '0 auto',
+          padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem'
+        }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', flex: 1, minHeight: 0 }}>
+            <DropZone label="Document A" step="01" side="left" value={leftText} onChange={setLeftText} fileName={leftFile} onFileNameChange={setLeftFile} />
+            <DropZone label="Document B" step="02" side="right" value={rightText} onChange={setRightText} fileName={rightFile} onFileNameChange={setRightFile} />
           </div>
-          <div className="flex items-center justify-center gap-4 py-4 px-6 border-t border-border bg-card flex-shrink-0">
-            <button
-              onClick={handleCompare}
-              disabled={!canCompare}
-              className={cn('h-10 px-8 rounded-lg text-sm font-semibold transition-all',
-                canCompare
-                  ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg'
-                  : 'bg-muted text-muted-foreground cursor-not-allowed'
-              )}>
-              Compare documents →
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+            <button onClick={handleCompare} disabled={!canCompare} style={{
+              ...btn('primary'), height: '2.25rem', padding: '0 2rem',
+              opacity: canCompare ? 1 : 0.4, cursor: canCompare ? 'pointer' : 'not-allowed',
+              fontSize: '0.875rem'
+            }}>
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.4"/>
+                <line x1="8.5" y1="8.5" x2="12" y2="12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+              </svg>
+              Compare
             </button>
-            {!canCompare && <span className="text-sm text-muted-foreground">Add text or drop files into both panes above</span>}
+            {!canCompare && <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Paste text or drop files into both panes</span>}
           </div>
-        </div>
+        </main>
       )}
 
-      {/* Results Phase */}
+      {/* ── RESULTS PHASE ── */}
       {hasRun && diffs && (
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden animate-fade-up">
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
           <DiffStats stats={stats} />
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
             {view === 'inline'
               ? <InlineView ref={diffViewRef} diffs={diffs} currentChange={currentChange} />
-              : <SideBySide ref={diffViewRef} diffs={diffs} leftLabel={leftFile || 'Original'} rightLabel={rightFile || 'Revised'} currentChange={currentChange} />
+              : <SideBySide ref={diffViewRef} diffs={diffs} leftLabel={leftFile || 'Document A'} rightLabel={rightFile || 'Document B'} currentChange={currentChange} />
             }
           </div>
-          <div className="flex items-center gap-3 px-5 py-2.5 border-t border-border bg-card flex-shrink-0">
-            <button onClick={() => setHasRun(false)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              ← Edit documents
-            </button>
-            <span className="text-xs text-muted-foreground">Modify and re-compare</span>
-          </div>
-        </div>
+          <footer style={{
+            borderTop: '1px solid var(--border)', padding: '0.5rem 1.5rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'var(--card)', fontSize: '0.6875rem', color: 'var(--muted-foreground)'
+          }}>
+            <button onClick={() => setHasRun(false)} style={{
+              background: 'none', border: 'none', fontFamily: 'var(--font-mono)',
+              fontSize: '0.6875rem', color: 'var(--muted-foreground)', cursor: 'pointer'
+            }}>← Edit documents</button>
+            <span>DiffDoc — documents never leave your browser</span>
+          </footer>
+        </main>
       )}
     </div>
   )

@@ -1,32 +1,32 @@
 import React from 'react'
-import { ChevronUp, ChevronDown } from 'lucide-react'
 
 export default function ChangeNavigator({ current, total, onPrev, onNext }) {
   if (total === 0) return null
+  const btnStyle = (disabled) => ({
+    width: '1.75rem', height: '1.75rem', borderRadius: 'var(--radius-md)',
+    background: 'var(--secondary)', border: '1px solid var(--border)',
+    color: disabled ? 'var(--muted-foreground)' : 'var(--foreground)',
+    cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.4 : 1,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'background var(--dur-fast) var(--ease-out)',
+    fontSize: '0.75rem', fontWeight: 500
+  })
   return (
-    <div className="flex items-center gap-1 bg-muted rounded-lg px-1 py-1">
-      <button
-        onClick={onPrev}
-        disabled={total === 0}
-        className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-background hover:shadow-sm disabled:opacity-30 transition-all"
-        title="Previous change"
-      >
-        <ChevronUp className="w-4 h-4" />
-      </button>
-      <div className="flex items-baseline gap-1 px-2">
-        <span className="text-sm font-bold text-primary">{total === 0 ? 0 : current + 1}</span>
-        <span className="text-xs text-muted-foreground">/</span>
-        <span className="text-sm font-semibold text-foreground">{total}</span>
-        <span className="text-xs text-muted-foreground ml-1">changes</span>
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+      background: 'var(--secondary)', border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-md)', padding: '0.25rem'
+    }}>
+      <button onClick={onPrev} disabled={total === 0} style={btnStyle(total === 0)} title="Previous change">↑</button>
+      <div style={{
+        display: 'flex', alignItems: 'baseline', gap: '0.2rem', padding: '0 0.5rem',
+        fontFamily: 'var(--font-mono)', fontSize: '0.75rem'
+      }}>
+        <span style={{ fontWeight: 500, color: 'var(--foreground)' }}>{total === 0 ? 0 : current + 1}</span>
+        <span style={{ color: 'var(--muted-foreground)' }}>/</span>
+        <span style={{ color: 'var(--muted-foreground)' }}>{total}</span>
       </div>
-      <button
-        onClick={onNext}
-        disabled={total === 0}
-        className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-background hover:shadow-sm disabled:opacity-30 transition-all"
-        title="Next change"
-      >
-        <ChevronDown className="w-4 h-4" />
-      </button>
+      <button onClick={onNext} disabled={total === 0} style={btnStyle(total === 0)} title="Next change">↓</button>
     </div>
   )
 }
