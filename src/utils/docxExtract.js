@@ -1,1 +1,25 @@
-let mammothCache = nullfunction loadMammoth() {if (mammothCache) return Promise.resolve(mammothCache)return new Promise((resolve, reject) => {if (window.mammoth) {mammothCache = window.mammothreturn resolve(mammothCache)}const script = document.createElement('script')script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'script.onload = () => {if (!window.mammoth) return reject(new Error('mammoth not found'))mammothCache = window.mammothresolve(mammothCache)}script.onerror = () => reject(new Error('Failed to load mammoth.js'))document.head.appendChild(script)})}export async function extractTextFromDOCX(file) {const mammoth = await loadMammoth()const arrayBuffer = await file.arrayBuffer()const result = await mammoth.extractRawText({ arrayBuffer })return result.value.trim()}# Getting StartedThe configuration file is updated by the system when the installer runs. Users should simply click the button to utilize the settings panel in order to enable the required features.It was designed to facilitate a very smooth onboarding experience. The dashboard was built to provide users with the ability to monitor their usage in real time. Obviously, this is a very important feature for teams who are basically unfamiliar with the interface.Please note that all settings will be saved automatically. It is worth noting that the process can take a few seconds to complete. Users just need to wait for the confirmation message before proceeding.
+let mammothCache = null
+function loadMammoth() {
+if (mammothCache) return Promise.resolve(mammothCache)
+return new Promise((resolve, reject) => {
+if (window.mammoth) {
+mammothCache = window.mammoth
+return resolve(mammothCache)
+}
+const script = document.createElement('script')
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'
+script.onload = () => {
+if (!window.mammoth) return reject(new Error('mammoth not found'))
+mammothCache = window.mammoth
+resolve(mammothCache)
+}
+script.onerror = () => reject(new Error('Failed to load mammoth.js'))
+document.head.appendChild(script)
+})
+}
+export async function extractTextFromDOCX(file) {
+const mammoth = await loadMammoth()
+const arrayBuffer = await file.arrayBuffer()
+const result = await mammoth.extractRawText({ arrayBuffer })
+return result.value.trim()
+}
