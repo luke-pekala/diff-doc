@@ -106,9 +106,10 @@ body {
 
 .animate-fade-up { animation: fade-up 0.35s var(--ease-out) both; }
 
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--secondary); border-radius: 2px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--secondary); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--ring); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
 
 /* ── MOBILE: make tap targets bigger ── */
 @media (max-width: 640px) {
