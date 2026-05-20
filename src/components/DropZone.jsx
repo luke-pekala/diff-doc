@@ -10,12 +10,13 @@ function getFileType(file) {
   return 'unknown'
 }
 
-export default function DropZone({ label, step, side, value, onChange, fileName, onFileNameChange }) {
+export default function DropZone({ label, step, side, value, onChange, fileName, onFileNameChange, isMobile }) {
   const [dragging, setDragging] = useState(false)
   const [loading, setLoading] = useState(false)
   const [loadingMsg, setLoadingMsg] = useState('')
   const [error, setError] = useState(null)
   const fileInputRef = useRef(null)
+  const textareaRef = useRef(null)
 
   const processFile = useCallback(async (file) => {
     if (!file) return
@@ -44,13 +45,20 @@ export default function DropZone({ label, step, side, value, onChange, fileName,
     e.preventDefault(); setDragging(false); processFile(e.dataTransfer.files[0])
   }, [processFile])
 
+  // When user taps the empty state hint, focus the textarea so keyboard appears
+  const handleEmptyTap = () => {
+    textareaRef.current?.focus()
+  }
+
+  const minHeight = isMobile ? 260 : 320
+
   return (
     <div style={{
-      background: 'var(--card)', border: `1px solid ${dragging ? 'var(--ring)' : 'var(--border)'}`,
+      background: 'var(--card)',
+      border: `1px solid ${dragging ? 'var(--ring)' : 'var(--border)'}`,
       borderRadius: 'var(--radius-xl)', overflow: 'hidden',
-      display: 'flex', flexDirection: 'column', minHeight: 320,
+      display: 'flex', flexDirection: 'column', minHeight,
       outline: dragging ? '1px dashed var(--ring)' : 'none', outlineOffset: -3,
-      transition: 'border-color var(--dur-fast) var(--ease-out)',
       animation: 'fade-up 0.35s var(--ease-out) both'
     }}
       onDrop={handleDrop}
@@ -60,68 +68,104 @@ export default function DropZone({ label, step, side, value, onChange, fileName,
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
-        padding: '0.625rem 1rem', borderBottom: '1px solid var(--border)'
+        padding: isMobile ? '0.625rem 0.875rem' : '0.625rem 1rem',
+        borderBottom: '1px solid var(--border)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
           <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', fontWeight: 400,
-            color: 'var(--muted-foreground)', letterSpacing: '0.04em',
+            fontFamily: 'var(--font-mono)', fontSize: '0.625rem', color: 'var(--muted-foreground)',
             background: 'var(--secondary)', padding: '0.1em 0.4em',
-            borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)'
+            borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', flexShrink: 0
           }}>{step}</span>
-          <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--foreground)' }}>{label}</span>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--foreground)', flexShrink: 0 }}>{label}</span>
           {fileName && (
             <span style={{
               fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--muted-foreground)',
-              background: 'var(--secondary)', padding: '0.15em 0.5em',
+              background: 'var(--secondary)', padding: '0.1em 0.45em',
               borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
-              display: 'flex', alignItems: 'center', gap: '0.3rem', maxWidth: 160, overflow: 'hidden'
+              display: 'flex', alignItems: 'center', gap: '0.25rem',
+              overflow: 'hidden', maxWidth: isMobile ? 120 : 160
             }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fileName}</span>
               <button onClick={() => { onChange(''); onFileNameChange('') }} style={{
                 background: 'none', border: 'none', color: 'var(--muted-foreground)',
-                cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0, fontSize: '0.75rem'
+                cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0,
+                WebkitTapHighlightColor: 'transparent',
               }}>×</button>
             </span>
           )}
         </div>
         <button onClick={() => fileInputRef.current?.click()} style={{
-          display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-          height: '1.75rem', padding: '0 0.6rem', borderRadius: 'var(--radius-md)',
-          background: 'var(--secondary)', border: '1px solid var(--border)',
-          fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: 500,
-          color: 'var(--muted-foreground)', cursor: 'pointer',
-          transition: 'color var(--dur-fast) var(--ease-out)'
+          display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+          height: isMobile ? '2rem' : '1.75rem', padding: isMobile ? '0 0.75rem' : '0 0.6rem',
+          borderRadius: 'var(--radius-md)', background: 'var(--secondary)',
+          border: '1px solid var(--border)', fontFamily: 'var(--font-sans)',
+          fontSize: isMobile ? '0.8125rem' : '0.75rem', fontWeight: 500,
+          color: 'var(--muted-foreground)', cursor: 'pointer', flexShrink: 0,
+          WebkitTapHighlightColor: 'transparent',
         }}>
           + Upload
         </button>
-        <input ref={fileInputRef} type="file" accept=".pdf,.docx,.doc,.txt,.md" style={{ display: 'none' }}
-          onChange={e => processFile(e.target.files[0])} />
+        <input ref={fileInputRef} type="file" accept=".pdf,.docx,.doc,.txt,.md"
+          style={{ display: 'none' }} onChange={e => processFile(e.target.files[0])} />
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: isMobile ? 200 : 240 }}>
+
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '0.75rem', color: 'var(--muted-foreground)' }}>
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
+            color: 'var(--muted-foreground)', background: 'var(--card)', zIndex: 2
+          }}>
             <span style={{ width: 14, height: 14, border: '1.5px solid var(--border)', borderTopColor: 'var(--ring)', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{loadingMsg}</span>
           </div>
-        ) : value ? (
-          <textarea value={value} onChange={e => onChange(e.target.value)} spellCheck={false}
+        ) : null}
+
+        {/* ── Always-rendered textarea ── */}
+        {/* This is the key fix: textarea is always present so paste always works */}
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          spellCheck={false}
+          placeholder=" "
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            padding: isMobile ? '0.875rem' : '1rem',
+            background: 'transparent', border: 'none',
+            fontFamily: 'var(--font-sans)',
+            fontSize: isMobile ? '0.9375rem' : '0.875rem',
+            lineHeight: 1.7, color: 'var(--foreground)',
+            resize: 'none', outline: 'none',
+            zIndex: 1,
+            // Make sure it's always interactive
+            pointerEvents: loading ? 'none' : 'all',
+          }}
+        />
+
+        {/* ── Empty state hint — shown on top when no value ── */}
+        {!value && !loading && (
+          <div
+            onClick={handleEmptyTap}
             style={{
-              width: '100%', height: '100%', padding: '1rem', background: 'transparent', border: 'none',
-              fontFamily: 'var(--font-sans)', fontSize: '0.875rem', lineHeight: 1.7,
-              color: 'var(--foreground)', resize: 'none', outline: 'none', minHeight: 240
-            }} />
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '0.625rem', padding: '2rem', textAlign: 'center', minHeight: 240 }}>
+              position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              gap: '0.625rem', padding: '2rem', textAlign: 'center',
+              pointerEvents: 'none', // let clicks pass through to textarea
+              zIndex: 0,
+            }}
+          >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color: 'var(--muted-foreground)', opacity: 0.4 }}>
               <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.3"/>
               <line x1="10" y1="6" x2="10" y2="10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
               <circle cx="10" cy="13" r="0.6" fill="currentColor"/>
             </svg>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-              Paste text or drag &amp; drop a file
+            <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
+              {isMobile ? 'Tap to paste or use Upload' : 'Paste text or drag & drop a file'}
             </p>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--muted-foreground)', opacity: 0.6 }}>
               PDF · DOCX · TXT · MD
@@ -142,7 +186,8 @@ export default function DropZone({ label, step, side, value, onChange, fileName,
       {/* Footer */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0.4rem 1rem', borderTop: '1px solid var(--border)'
+        padding: isMobile ? '0.5rem 0.875rem' : '0.4rem 1rem',
+        borderTop: '1px solid var(--border)'
       }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--muted-foreground)' }}>
           {value.length.toLocaleString()} chars
@@ -150,7 +195,8 @@ export default function DropZone({ label, step, side, value, onChange, fileName,
         {value && (
           <button onClick={() => { onChange(''); onFileNameChange('') }} style={{
             background: 'none', border: 'none', fontFamily: 'var(--font-mono)',
-            fontSize: '0.6875rem', color: 'var(--muted-foreground)', cursor: 'pointer'
+            fontSize: '0.6875rem', color: 'var(--muted-foreground)', cursor: 'pointer',
+            padding: '0.25rem 0.5rem', WebkitTapHighlightColor: 'transparent',
           }}>Clear</button>
         )}
       </div>
